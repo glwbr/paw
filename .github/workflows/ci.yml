@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      db: ${{ steps.filter.outputs.db }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            go:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'mise.toml'
+              - '.github/workflows/ci.yml'
+            db:
+              - 'db/queries/**'
+              - 'db/sqlc.yaml'
+              - '.github/workflows/ci.yml'
+            migrations:
+              - 'db/migrations/**'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/migrations.yml'
+            web:
+              - 'web/**'
+              - 'internal/api/openapi.yaml'
+              - '.github/workflows/ci.yml'
+
+  build:
+    needs: changes
+    if: ${{ needs.changes.outputs.go == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v4
+      - run: mise run build
+      - run: mise run vet
+      - run: mise run test:race
+
+  lint:
+    needs: changes
+    if: ${{ needs.changes.outputs.go == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v4
+      - run: mise run lint
+
+  sqlc:
+    needs: changes
+    if: ${{ needs.changes.outputs.db == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v4
+      - name: Check generated code is up to date
+        run: cd db && sqlc diff
+
+  web:
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: cd web && pnpm install --frozen-lockfile
+      - run: cd web && pnpm orval
+      - run: cd web && npx tsc --noEmit
+      - run: cd web && pnpm build
+
+  migrations:
+    needs: [changes, build, lint, sqlc]
+    if: ${{ always() && needs.changes.outputs.migrations == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    uses: ./.github/workflows/migrations.yml
