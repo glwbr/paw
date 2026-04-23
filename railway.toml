@@ -1,0 +1,6 @@
+[build]
+dockerfile = "docker/Dockerfile"
+
+[deploy]
+healthcheckPath = "/openapi.yaml"
+restartPolicyType = "ON_FAILURE"
