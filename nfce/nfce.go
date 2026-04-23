@@ -27,7 +27,6 @@ type Receipt struct {
 	ParsedAt time.Time `json:"parsed_at"`
 }
 
-// Address contains street address information.
 type Address struct {
 	Street     string `json:"street,omitempty"`
 	Number     string `json:"number,omitempty"`
@@ -38,7 +37,6 @@ type Address struct {
 	ZipCode    string `json:"zip_code,omitempty"`
 }
 
-// Store contains merchant/store information from the receipt.
 type Store struct {
 	CNPJ      string  `json:"cnpj"`
 	Name      string  `json:"name"`
@@ -47,7 +45,6 @@ type Store struct {
 	Address   Address `json:"address"`
 }
 
-// Totals contains aggregated amounts from the receipt.
 type Totals struct {
 	Subtotal       Money `json:"subtotal,omitempty"`
 	DiscountAmount Money `json:"discount_amount,omitempty"`
@@ -55,7 +52,6 @@ type Totals struct {
 	ApproxTaxTotal Money `json:"approx_tax_total"` // Lei 12.741
 }
 
-// Payment is a single payment entry on a receipt.
 type Payment struct {
 	Method PaymentMethod `json:"method"`
 	Amount Money         `json:"amount"`
@@ -80,10 +76,8 @@ func (r *Receipt) Validate() error {
 	return nil
 }
 
-// ItemCount returns the number of distinct line items on the receipt.
 func (r *Receipt) ItemCount() int { return len(r.Items) }
 
-// TotalQuantity returns the sum of all item quantities on the receipt.
 func (r *Receipt) TotalQuantity() Quantity {
 	var total Quantity
 	for _, item := range r.Items {

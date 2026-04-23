@@ -42,7 +42,6 @@ func splitAddress(raw string) (street, number string) {
 	return strings.TrimSpace(raw[:idx]), num
 }
 
-// cityName extracts the city name from a formatted code-name string.
 func cityName(raw string) string {
 	if idx := strings.Index(raw, " - "); idx >= 0 {
 		return strings.TrimSpace(raw[idx+3:])

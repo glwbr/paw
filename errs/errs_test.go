@@ -56,7 +56,6 @@ func TestPublicMessage_publicOuterOpaqueInner(t *testing.T) {
 
 func TestPublicInterface_satisfaction(t *testing.T) {
 	var _ errs.Public = &publicErr{}
-	// Verify errors.As works through the chain.
 	err := fmt.Errorf("a: %w", &publicErr{"msg"})
 	var p errs.Public
 	if !errors.As(err, &p) {

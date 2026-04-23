@@ -77,7 +77,6 @@ func newTestPortal(t *testing.T, validCaptcha string) *httptest.Server {
 	}))
 }
 
-// newFetcherForTest creates a Fetcher pointing at the test server.
 func newFetcherForTest(solver captcha.Solver) *Fetcher {
 	return New(WithSolver(solver))
 }
@@ -99,13 +98,11 @@ func TestFetcher_Fetch_qrURL(t *testing.T) {
 	}))
 	defer qrSrv.Close()
 
-	// We need to override baseURL for tests. Since it's a const, we'll
-	// test the session directly with the test server URL.
+	// baseURL is a const; test the session directly against the test server.
 	f := newFetcherForTest(nil)
 	client, _ := f.newClient()
 	s := &session{client: client, limiter: f.limiter}
 
-	// Fetch QR
 	danfe, err := s.fetchQR(context.Background(), qrSrv.URL+"/qr?qr=1")
 	if err != nil {
 		t.Fatalf("fetchQR() error: %v", err)
@@ -216,7 +213,6 @@ func TestCheckErrors_patterns(t *testing.T) {
 				t.Fatalf("expected error %v, got nil", tt.want)
 			}
 
-			// Check sentinel errors with errors.Is
 			if sentinel, ok := tt.want.(interface{ Is(error) bool }); ok {
 				_ = sentinel
 				if !errors.Is(got, tt.want) {
@@ -225,7 +221,6 @@ func TestCheckErrors_patterns(t *testing.T) {
 				return
 			}
 
-			// Check custom types with errors.As
 			switch tt.want.(type) {
 			case *sefaz.InvalidAccessKeyError:
 				var target *sefaz.InvalidAccessKeyError
@@ -263,8 +258,7 @@ func TestSession_accessKeyFlow(t *testing.T) {
 	client, _ := f.newClient()
 	s := &session{client: client, limiter: f.limiter, solver: solver}
 
-	// Load access key page
-	// We need to point at the test server, so construct the URL manually.
+	// baseURL is a const; construct request URLs directly against the test server.
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+pathAccessKey, nil)
 	body, err := s.do(context.Background(), req)
 	if err != nil {
@@ -279,7 +273,6 @@ func TestSession_accessKeyFlow(t *testing.T) {
 		t.Fatal("expected valid form state")
 	}
 
-	// Fetch captcha
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+pathCaptcha+"?t=123", nil)
 	imgBody, err := s.do(context.Background(), req)
 	if err != nil {
@@ -289,7 +282,6 @@ func TestSession_accessKeyFlow(t *testing.T) {
 		t.Error("expected non-empty captcha body")
 	}
 
-	// Submit access key with correct captcha
 	form := buildForm(fs, map[string]string{
 		fieldAccessKey: "29240112345678000190650010000001231234567890",
 		fieldCaptcha:   "ABCD",
@@ -349,10 +341,7 @@ func TestSession_pipeline(t *testing.T) {
 	client, _ := f.newClient()
 	s := &session{client: client, limiter: f.limiter}
 
-	// We need to override the baseURL for pipeline to work with test server.
-	// Since baseURL is a const, we test the individual steps instead.
-
-	// navigateToTabs
+	// baseURL is a const; test pipeline steps individually against the test server.
 	fs := &formState{viewState: "vs", eventValidation: "ev"}
 	form := buildForm(fs, map[string]string{
 		fieldViewTabs: "Visualizar em Abas",
@@ -367,7 +356,6 @@ func TestSession_pipeline(t *testing.T) {
 		t.Errorf("expected nfe tab, got: %s", truncate(string(body), 100))
 	}
 
-	// Fetch print page
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+pathPrint+"?imprimir_nfe=1&print=true", nil)
 	body, err = s.do(context.Background(), req)
 	if err != nil {

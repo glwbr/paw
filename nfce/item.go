@@ -23,7 +23,6 @@ type Item struct {
 	ApproxTaxAmount Money `json:"approx_tax_amount"` // transparency law
 }
 
-// ItemTaxes contains tax information for an item (ICMS, PIS, COFINS).
 type ItemTaxes struct {
 	ICMS   *ICMS   `json:"icms,omitempty"`
 	PIS    *PIS    `json:"pis,omitempty"`
@@ -37,14 +36,12 @@ type ICMS struct {
 	Amount     Money `json:"amount"`
 }
 
-// PIS represents PIS tax information.
 type PIS struct {
 	Rate       Rate  `json:"rate"`
 	BaseAmount Money `json:"base_amount"`
 	Amount     Money `json:"amount"`
 }
 
-// COFINS represents COFINS tax information.
 type COFINS struct {
 	Rate       Rate  `json:"rate"`
 	BaseAmount Money `json:"base_amount"`

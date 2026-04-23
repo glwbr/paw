@@ -113,7 +113,6 @@ type session struct {
 	danfeBase string
 }
 
-// do executes a rate-limited HTTP request with browser headers and returns the response body.
 func (s *session) do(ctx context.Context, req *http.Request) ([]byte, error) {
 	body, _, err := s.doFull(ctx, req)
 	return body, err
@@ -367,7 +366,6 @@ func (s *session) navigateToTabs(ctx context.Context, fs *formState) error {
 	return checkErrors(body)
 }
 
-// checkErrors scans HTML response body for portal error messages.
 func checkErrors(html []byte) error {
 	lower := strings.ToLower(string(html))
 

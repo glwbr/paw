@@ -45,7 +45,6 @@ const (
 	PackUnitDozen PackUnit = "DZ"  // Dozen
 )
 
-// NormalizeUnit classifies a raw NFC-e unit into measure or pack.
 func NormalizeUnit(raw string) NormalizedUnit {
 	if strings.TrimSpace(raw) == "" {
 		return NormalizedUnit{Kind: UnitKindUnknown}
@@ -86,7 +85,6 @@ func NormalizeUnit(raw string) NormalizedUnit {
 	}
 }
 
-// BaseUnit normalizes to canonical units (KG, L, etc.)
 func (u MeasureUnit) BaseUnit() MeasureUnit {
 	switch u {
 	case MeasureGram:
@@ -111,10 +109,8 @@ func (u MeasureUnit) ConversionRatio() (num, den int64) {
 	}
 }
 
-// IsWeight reports whether u is a weight-based unit.
 func (u MeasureUnit) IsWeight() bool { return u == MeasureKg || u == MeasureGram }
 
-// IsVolume reports whether u is a volume-based unit.
 func (u MeasureUnit) IsVolume() bool { return u == MeasureLiter || u == MeasureMilliliter }
 
 // PricePerBaseUnit calculates normalized price (e.g. price per KG or per L).

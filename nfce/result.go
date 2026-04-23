@@ -9,5 +9,4 @@ type Result struct {
 	Errors   []string // per-page parse failures
 }
 
-// HasErrors reports whether any parse errors occurred.
 func (r *Result) HasErrors() bool { return len(r.Errors) > 0 }
