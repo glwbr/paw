@@ -1,0 +1,87 @@
+[tools]
+go                                                    = "1.25.4"
+node                                                  = "24"
+golangci-lint                                         = "latest"
+"go:github.com/sqlc-dev/sqlc/cmd/sqlc"                = "latest"
+"go:golang.org/x/tools/cmd/goimports"                 = "latest"
+"go:github.com/golang-migrate/migrate/v4/cmd/migrate" = { version = "latest", tags = "postgres" }
+
+[env]
+_.file = ".env"
+
+[tasks.build]
+description = "Compile binary"
+run = "go build ./..."
+
+[tasks.test]
+description = "Run tests"
+run = "go test ./..."
+
+[tasks."test:race"]
+description = "Run tests with race detector"
+run = "go test -race ./..."
+
+[tasks."test:cover"]
+description = "Run tests with coverage"
+run = "go test -cover ./..."
+
+[tasks.lint]
+description = "Run linter"
+run = "golangci-lint run"
+
+[tasks.fmt]
+description = "Format code"
+run = "goimports -w ."
+
+[tasks.vet]
+description = "Static analysis"
+run = "go vet ./..."
+
+[tasks.sqlc]
+description = "Generate DB code"
+run = "sqlc generate -f db/sqlc.yaml"
+
+[tasks."db:up"]
+description = "Start local postgres + pgadmin via docker compose"
+run = "docker compose -f docker/compose.yaml up -d"
+
+[tasks."db:down"]
+description = "Stop local docker compose stack"
+run = "docker compose -f docker/compose.yaml down"
+
+[tasks."db:psql"]
+description = "psql into the local docker postgres"
+run = "docker compose -f docker/compose.yaml exec postgres psql -U paw paw"
+
+[tasks."migrate:up"]
+description = "Apply all pending migrations"
+run = 'migrate -path db/migrations -database "$DATABASE_URL" up'
+
+[tasks."migrate:down"]
+description = "Roll back the last migration"
+run = 'migrate -path db/migrations -database "$DATABASE_URL" down 1'
+
+[tasks."migrate:create"]
+description = "Create a new sequential migration"
+run = 'migrate create -ext sql -dir db/migrations -seq {{arg(name="name")}}'
+
+[tasks."seed:units"]
+description = "Seed units and unit aliases"
+run = 'psql "$DATABASE_URL" -f db/seeds/units.sql'
+
+[tasks.seed]
+description = "Run all seeds"
+depends = ["seed:units"]
+
+[tasks.ci]
+description = "Full CI pipeline (build → vet → lint → test)"
+depends = ["build", "vet", "lint", "test"]
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "rm -f paw"
+
+[tasks.api]
+description = "Start API server"
+run = "go run ./cmd/api"
+

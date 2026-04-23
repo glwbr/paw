@@ -1,0 +1,13 @@
+version: "2"
+
+linters:
+  default: standard
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintln
+        - fmt.Fprintf
+        - fmt.Println
+        - fmt.Printf
+        - (fmt.State).Write
+        - (io.ReadCloser).Close
