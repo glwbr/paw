@@ -1,0 +1,3 @@
+## 2026-06-03 - [API Self-Discoverability and Fast-Fail Validation]
+**Learning:** In backend-only projects, DX (Developer Experience) is the primary UX. Surfacing actionable validation errors immediately (e.g., specific regex failures for access keys) prevents "silent" async failures that are hard to trace. Adding self-discoverable links (like `captcha_url`) in the API response guides the user/developer to the next logical step in a multi-step process without needing to refer back to documentation.
+**Action:** Always look for multi-step async processes and ensure the intermediate states provide direct links or clear instructions for the next step. Implement strict front-door validation for well-defined formats (CNPJs, Access Keys, etc.) to provide immediate feedback.
