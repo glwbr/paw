@@ -67,17 +67,27 @@ func TestReceiptImport_MarshalJSON_CaptchaURL(t *testing.T) {
 	ri := newReceiptImport("44000000000000000000000000000000000000000000", "")
 
 	// Test without captcha
-	b, _ := json.Marshal(ri)
+	b, err := json.Marshal(ri)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var res map[string]any
-	json.Unmarshal(b, &res)
+	if err := json.Unmarshal(b, &res); err != nil {
+		t.Fatal(err)
+	}
 	if _, ok := res["captcha_url"]; ok {
 		t.Error("captcha_url should not be present when status is pending")
 	}
 
 	// Set status to waiting_captcha
 	ri.setStatus(StatusWaitingCaptcha)
-	b, _ = json.Marshal(ri)
-	json.Unmarshal(b, &res)
+	b, err = json.Marshal(ri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(b, &res); err != nil {
+		t.Fatal(err)
+	}
 
 	wantURL := "/receipts/imports/" + ri.ID + "/captcha"
 	if got := res["captcha_url"]; got != wantURL {
