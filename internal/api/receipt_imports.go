@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 
@@ -43,6 +44,8 @@ var (
 	ErrNotFound          = errors.New("receipt import not found")
 	ErrCaptchaNotPending = errors.New("no captcha pending for this import")
 )
+
+var accessKeyPattern = regexp.MustCompile("^[0-9]{44}$")
 
 // fetcherFactory creates a Fetcher, optionally configured with a captcha solver.
 type fetcherFactory func(captcha.Solver) sefaz.Fetcher
@@ -233,10 +236,11 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 		ID        string    `json:"id"`
 		Status    Status    `json:"status"`
 		Done      bool      `json:"done"`
-		AccessKey string    `json:"access_key,omitempty"`
-		QRURL     string    `json:"qr_url,omitempty"`
-		ReceiptID *int64    `json:"receipt_id,omitempty"`
-		Error     string    `json:"error,omitempty"`
+		AccessKey  string    `json:"access_key,omitempty"`
+		QRURL      string    `json:"qr_url,omitempty"`
+		CaptchaURL string    `json:"captcha_url,omitempty"`
+		ReceiptID  *int64    `json:"receipt_id,omitempty"`
+		Error      string    `json:"error,omitempty"`
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}{
@@ -245,6 +249,12 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 		Done:      r.status.Terminal(),
 		AccessKey: r.AccessKey,
 		QRURL:     r.QRURL,
+		CaptchaURL: func() string {
+			if r.status == StatusWaitingCaptcha {
+				return "/receipts/imports/" + r.ID + "/captcha"
+			}
+			return ""
+		}(),
 		ReceiptID: r.ReceiptID,
 		Error:     r.errMsg,
 		CreatedAt: r.CreatedAt,
@@ -304,6 +314,9 @@ func (s *Server) createImport(w http.ResponseWriter, r *http.Request) error {
 	}
 	if (req.AccessKey == "") == (req.QRURL == "") {
 		return apierrors.BadRequest("exactly one of access_key or qr_url is required", nil)
+	}
+	if req.AccessKey != "" && !accessKeyPattern.MatchString(req.AccessKey) {
+		return apierrors.BadRequest("invalid access key format", nil)
 	}
 
 	ri := s.submitImport(req.AccessKey, req.QRURL)
