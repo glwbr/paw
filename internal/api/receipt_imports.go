@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 
@@ -21,6 +22,8 @@ import (
 )
 
 const importTimeout = 5 * time.Minute
+
+var accessKeyPattern = regexp.MustCompile(`^[0-9]{44}$`)
 
 // Status represents the current state of a receipt import.
 type Status string
@@ -229,16 +232,17 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	return json.Marshal(struct {
-		ID        string    `json:"id"`
-		Status    Status    `json:"status"`
-		Done      bool      `json:"done"`
-		AccessKey string    `json:"access_key,omitempty"`
-		QRURL     string    `json:"qr_url,omitempty"`
-		ReceiptID *int64    `json:"receipt_id,omitempty"`
-		Error     string    `json:"error,omitempty"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
+	res := struct {
+		ID         string    `json:"id"`
+		Status     Status    `json:"status"`
+		Done       bool      `json:"done"`
+		AccessKey  string    `json:"access_key,omitempty"`
+		QRURL      string    `json:"qr_url,omitempty"`
+		CaptchaURL string    `json:"captcha_url,omitempty"`
+		ReceiptID  *int64    `json:"receipt_id,omitempty"`
+		Error      string    `json:"error,omitempty"`
+		CreatedAt  time.Time `json:"created_at"`
+		UpdatedAt  time.Time `json:"updated_at"`
 	}{
 		ID:        r.ID,
 		Status:    r.status,
@@ -249,7 +253,13 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 		Error:     r.errMsg,
 		CreatedAt: r.CreatedAt,
 		UpdatedAt: r.UpdatedAt,
-	})
+	}
+
+	if r.status == StatusWaitingCaptcha {
+		res.CaptchaURL = "/receipts/imports/" + r.ID + "/captcha"
+	}
+
+	return json.Marshal(res)
 }
 
 // submitImport creates a receipt import and starts its run goroutine. Returns
@@ -304,6 +314,10 @@ func (s *Server) createImport(w http.ResponseWriter, r *http.Request) error {
 	}
 	if (req.AccessKey == "") == (req.QRURL == "") {
 		return apierrors.BadRequest("exactly one of access_key or qr_url is required", nil)
+	}
+
+	if req.AccessKey != "" && !accessKeyPattern.MatchString(req.AccessKey) {
+		return apierrors.BadRequest("invalid access key format", nil)
 	}
 
 	ri := s.submitImport(req.AccessKey, req.QRURL)
