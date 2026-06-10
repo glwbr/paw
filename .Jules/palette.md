@@ -1,0 +1,3 @@
+## 2025-05-15 - Improving API Discoverability for Async Operations
+**Learning:** In headless/backend-only projects, the user experience (UX) and developer experience (DX) are defined by the discoverability of subsequent steps in complex, multi-stage asynchronous operations. Simply returning a status is not enough; providing actionable hypermedia links (like `captcha_url`) significantly lowers the friction for API consumers.
+**Action:** Always provide resource-specific hypermedia links in API responses when an operation enters a state that requires user intervention or a specific follow-up action.
