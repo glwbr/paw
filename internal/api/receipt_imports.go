@@ -17,10 +17,14 @@ import (
 	"github.com/glwbr/paw/internal/store"
 	"github.com/glwbr/paw/nfce"
 	"github.com/glwbr/paw/sefaz"
+	"regexp"
+
 	"github.com/glwbr/paw/sefaz/captcha"
 )
 
 const importTimeout = 5 * time.Minute
+
+var accessKeyPattern = regexp.MustCompile(`^[0-9]{44}$`)
 
 // Status represents the current state of a receipt import.
 type Status string
@@ -229,26 +233,35 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	return json.Marshal(struct {
-		ID        string    `json:"id"`
-		Status    Status    `json:"status"`
-		Done      bool      `json:"done"`
-		AccessKey string    `json:"access_key,omitempty"`
-		QRURL     string    `json:"qr_url,omitempty"`
-		ReceiptID *int64    `json:"receipt_id,omitempty"`
-		Error     string    `json:"error,omitempty"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-	}{
-		ID:        r.ID,
-		Status:    r.status,
-		Done:      r.status.Terminal(),
-		AccessKey: r.AccessKey,
-		QRURL:     r.QRURL,
-		ReceiptID: r.ReceiptID,
-		Error:     r.errMsg,
-		CreatedAt: r.CreatedAt,
-		UpdatedAt: r.UpdatedAt,
+	var captchaURL string
+	if r.status == StatusWaitingCaptcha {
+		captchaURL = "/receipts/imports/" + r.ID + "/captcha"
+	}
+
+	type receiptImportJSON struct {
+		ID         string    `json:"id"`
+		Status     Status    `json:"status"`
+		Done       bool      `json:"done"`
+		AccessKey  string    `json:"access_key,omitempty"`
+		QRURL      string    `json:"qr_url,omitempty"`
+		CaptchaURL string    `json:"captcha_url,omitempty"`
+		ReceiptID  *int64    `json:"receipt_id,omitempty"`
+		Error      string    `json:"error,omitempty"`
+		CreatedAt  time.Time `json:"created_at"`
+		UpdatedAt  time.Time `json:"updated_at"`
+	}
+
+	return json.Marshal(receiptImportJSON{
+		ID:         r.ID,
+		Status:     r.status,
+		Done:       r.status.Terminal(),
+		AccessKey:  r.AccessKey,
+		QRURL:      r.QRURL,
+		CaptchaURL: captchaURL,
+		ReceiptID:  r.ReceiptID,
+		Error:      r.errMsg,
+		CreatedAt:  r.CreatedAt,
+		UpdatedAt:  r.UpdatedAt,
 	})
 }
 
@@ -304,6 +317,9 @@ func (s *Server) createImport(w http.ResponseWriter, r *http.Request) error {
 	}
 	if (req.AccessKey == "") == (req.QRURL == "") {
 		return apierrors.BadRequest("exactly one of access_key or qr_url is required", nil)
+	}
+	if req.AccessKey != "" && !accessKeyPattern.MatchString(req.AccessKey) {
+		return apierrors.BadRequest("access_key must be exactly 44 digits", nil)
 	}
 
 	ri := s.submitImport(req.AccessKey, req.QRURL)
