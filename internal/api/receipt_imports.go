@@ -235,9 +235,10 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 		Done      bool      `json:"done"`
 		AccessKey string    `json:"access_key,omitempty"`
 		QRURL     string    `json:"qr_url,omitempty"`
-		ReceiptID *int64    `json:"receipt_id,omitempty"`
-		Error     string    `json:"error,omitempty"`
-		CreatedAt time.Time `json:"created_at"`
+		ReceiptID  *int64    `json:"receipt_id,omitempty"`
+		CaptchaURL string    `json:"captcha_url,omitempty"`
+		Error      string    `json:"error,omitempty"`
+		CreatedAt  time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 	}{
 		ID:        r.ID,
@@ -246,6 +247,12 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 		AccessKey: r.AccessKey,
 		QRURL:     r.QRURL,
 		ReceiptID: r.ReceiptID,
+		CaptchaURL: func() string {
+			if r.status == StatusWaitingCaptcha {
+				return "/receipts/imports/" + r.ID + "/captcha"
+			}
+			return ""
+		}(),
 		Error:     r.errMsg,
 		CreatedAt: r.CreatedAt,
 		UpdatedAt: r.UpdatedAt,
