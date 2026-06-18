@@ -1,0 +1,3 @@
+## 2025-06-18 - [API UX: Hypermedia and Early Validation]
+**Learning:** In backend-only or headless projects, UX is defined by the API contract's discoverability and actionability. Providing resource-specific hypermedia links (like `captcha_url`) guides consumers through asynchronous flows without requiring out-of-band documentation. Immediate validation of complex identifiers (like 44-digit NFC-e keys) prevents frustrating "delayed failures" in background processes.
+**Action:** Always look for opportunities to add "next-step" links in LRO (Long Running Operation) status responses and implement "fail-fast" validation for all input parameters.
