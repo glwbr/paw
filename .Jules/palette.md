@@ -1,0 +1,3 @@
+## 2026-06-22 - API Discoverability and Fail-Fast UX
+**Learning:** In headless or backend-only projects, User Experience is defined by the Developer Experience (DX) and the predictability of the API. Providing hypermedia links (like `captcha_url`) when a resource requires user intervention makes the process self-documenting and easier for frontends to implement. Similarly, early validation of identifiers (like NFC-e access keys) prevents unnecessary background work and provides immediate, actionable feedback to the user.
+**Action:** Always look for opportunities to add resource-specific links in API responses and implement "fail-fast" validation at the entry points.
