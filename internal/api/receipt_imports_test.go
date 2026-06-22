@@ -2,14 +2,28 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/glwbr/paw/sefaz"
+	"github.com/glwbr/paw/sefaz/captcha"
 )
 
+type dummyFetcher struct{}
+
+func (f *dummyFetcher) Fetch(ctx context.Context, req *sefaz.Request) (*sefaz.Result, error) {
+	return &sefaz.Result{Page: []byte("<html></html>")}, nil
+}
+
+func dummyFetcherFactory(captcha.Solver) sefaz.Fetcher {
+	return &dummyFetcher{}
+}
+
 func TestReceiptImport_CaptchaURL(t *testing.T) {
-	s := NewServer(nil, nil)
+	s := NewServer(nil, dummyFetcherFactory)
 	ri := newReceiptImport("29240112345678901234650010000000012345678901", "")
 	s.mu.Lock()
 	s.imports[ri.ID] = ri
@@ -56,7 +70,7 @@ func TestReceiptImport_CaptchaURL(t *testing.T) {
 }
 
 func TestCreateImport_Validation(t *testing.T) {
-	s := NewServer(nil, nil)
+	s := NewServer(nil, dummyFetcherFactory)
 
 	tests := []struct {
 		name       string
