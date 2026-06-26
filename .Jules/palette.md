@@ -1,0 +1,3 @@
+## 2025-05-15 - API Discoverability and Fail-Fast Validation
+**Learning:** In headless or backend-only projects, the "User Experience" is primarily defined by the "Developer Experience" and the API's self-discoverability. Providing hypermedia links (like `captcha_url`) guides clients through complex, multi-step asynchronous processes without requiring them to hardcode URL patterns. Additionally, immediate validation of inputs (like NFC-e access keys) provides actionable feedback significantly faster than allowing the request to fail in a background process.
+**Action:** Always look for opportunities to add resource-specific links in API responses and move validation as close to the entry point as possible to improve the failure-fast UX.
