@@ -1,0 +1,3 @@
+## 2026-06-29 - [API Discoverability and Failure-Fast Validation]
+**Learning:** In headless projects, API UX is defined by Developer Experience (DX). Discoverability through hypermedia links (like `captcha_url`) guides consumers through asynchronous flows, while failure-fast validation of complex identifiers (like 44-digit NFC-e access keys) provides immediate, actionable feedback before background processing starts.
+**Action:** In future backend-only tasks, prioritize adding resource links to guide clients through multi-step processes and implement identifier validation at the API entry point.
