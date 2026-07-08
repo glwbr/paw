@@ -140,7 +140,9 @@ func TestWriteError_Mapping(t *testing.T) {
 		t.Errorf("HTTPError: want 400, got %d", rec.Code)
 	}
 	var res map[string]any
-	json.NewDecoder(rec.Body).Decode(&res)
+	if err := json.NewDecoder(rec.Body).Decode(&res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
 	if res["error"] != "custom message" {
 		t.Errorf("HTTPError message: want %q, got %q", "custom message", res["error"])
 	}
