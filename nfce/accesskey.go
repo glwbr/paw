@@ -21,7 +21,7 @@ type AccessKey struct {
 func ParseAccessKey(raw string) (AccessKey, error) {
 	digits := strings.ReplaceAll(raw, " ", "")
 	if len(digits) != 44 {
-		return AccessKey{}, fmt.Errorf("parse access key: %w", ErrInvalidAccessKeyFormat)
+		return AccessKey{}, fmt.Errorf("parse access key: %w", ErrInvalidAccessKey)
 	}
 	for _, r := range digits {
 		if r < '0' || r > '9' {
