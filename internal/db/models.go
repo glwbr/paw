@@ -68,6 +68,56 @@ func (ns NullPaymentMethod) Value() (driver.Value, error) {
 	return string(ns.PaymentMethod), nil
 }
 
+type UnitCode string
+
+const (
+	UnitCodeKG      UnitCode = "KG"
+	UnitCodeG       UnitCode = "G"
+	UnitCodeL       UnitCode = "L"
+	UnitCodeML      UnitCode = "ML"
+	UnitCodeM       UnitCode = "M"
+	UnitCodePC      UnitCode = "PC"
+	UnitCodeCX      UnitCode = "CX"
+	UnitCodePCT     UnitCode = "PCT"
+	UnitCodeDZ      UnitCode = "DZ"
+	UnitCodeUNKNOWN UnitCode = "UNKNOWN"
+)
+
+func (e *UnitCode) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UnitCode(s)
+	case string:
+		*e = UnitCode(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UnitCode: %T", src)
+	}
+	return nil
+}
+
+type NullUnitCode struct {
+	UnitCode UnitCode `json:"unit_code"`
+	Valid    bool     `json:"valid"` // Valid is true if UnitCode is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUnitCode) Scan(value interface{}) error {
+	if value == nil {
+		ns.UnitCode, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UnitCode.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUnitCode) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UnitCode), nil
+}
+
 type Receipt struct {
 	ID             int64      `json:"id"`
 	AccessKey      string     `json:"access_key"`
