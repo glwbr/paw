@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: PAW API
+  description: API for NFC-e receipt ingestion.
+  version: 1.0.0
+paths:
+  /receipts/imports:
+    post:
+      summary: Create a new receipt import
+      description: |
+        Starts an asynchronous import process for a receipt. Returns 202 Accepted
+        with an Operation-Location header for polling.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_key:
+                  type: string
+                  pattern: '^[0-9]{44}$'
+                  example: "29240101234567890123650010000000011234567890"
+                  description: The 44-digit NFC-e access key.
+                qr_url:
+                  type: string
+                  format: uri
+                  description: The QR code URL from the receipt.
+              oneOf:
+                - required: [access_key]
+                - required: [qr_url]
+      responses:
+        '202':
+          description: Import started
+          headers:
+            Operation-Location:
+              schema:
+                type: string
+              description: URL to poll for the import status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptImport'
+        '400':
+          description: Invalid request
+  /receipts/imports/{id}:
+    get:
+      summary: Get receipt import status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current status of the import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptImport'
+        '404':
+          description: Import not found
+  /receipts/imports/{id}/captcha:
+    get:
+      summary: Get captcha image
+      description: Returns the captcha image if the import is in 'waiting_captcha' status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Captcha image
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No captcha available
+    post:
+      summary: Submit captcha answer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answer:
+                  type: string
+              required: [answer]
+      responses:
+        '200':
+          description: Answer submitted
+        '400':
+          description: Invalid answer
+        '409':
+          description: No captcha pending
+components:
+  schemas:
+    ReceiptImport:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [pending, fetching, waiting_captcha, processing, completed, failed]
+        done:
+          type: boolean
+        access_key:
+          type: string
+        qr_url:
+          type: string
+        receipt_id:
+          type: integer
+          format: int64
+        error:
+          type: string
+        captcha_url:
+          type: string
+          description: Link to the captcha image, present when status is 'waiting_captcha'.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
