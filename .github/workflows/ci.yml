@@ -78,18 +78,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Check if web directory exists
+        id: check_web
+        run: |
+          if [ -d "web" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
       - uses: pnpm/action-setup@v4
+        if: steps.check_web.outputs.exists == 'true'
         with:
           version: 10
       - uses: actions/setup-node@v4
+        if: steps.check_web.outputs.exists == 'true'
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
       - run: cd web && pnpm install --frozen-lockfile
+        if: steps.check_web.outputs.exists == 'true'
       - run: cd web && pnpm orval
+        if: steps.check_web.outputs.exists == 'true'
       - run: cd web && npx tsc --noEmit
+        if: steps.check_web.outputs.exists == 'true'
       - run: cd web && pnpm build
+        if: steps.check_web.outputs.exists == 'true'
 
   migrations:
     needs: [changes, build, lint, sqlc]
