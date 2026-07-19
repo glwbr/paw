@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: PAW API
+  description: NFC-e receipt ingestion and processing API.
+  version: 1.0.0
+paths:
+  /receipts/imports:
+    post:
+      summary: Create a new receipt import
+      description: Starts the process of fetching and parsing an NFC-e receipt from SEFAZ.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_key:
+                  type: string
+                  description: 44-digit NFC-e access key.
+                  pattern: '^[0-9]{44}$'
+                  example: '29240112345678000101650010000000011000000019'
+                qr_url:
+                  type: string
+                  description: Full QR code URL from a physical receipt.
+                  example: 'https://www.sefaz.ba.gov.br/nfce/qrcode?p=29240112345678000101650010000000011000000019|2|1|1|... '
+              oneOf:
+                - required: [access_key]
+                - required: [qr_url]
+      responses:
+        '202':
+          description: Import accepted and started.
+          headers:
+            Operation-Location:
+              schema:
+                type: string
+              description: Relative URL to poll for import status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptImport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /receipts/imports/{id}:
+    get:
+      summary: Get receipt import status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{32}$'
+            example: '9fb94c2db1b7eb774a382100df3fcd6d'
+      responses:
+        '200':
+          description: Current status of the import.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptImport'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /receipts/imports/{id}/captcha:
+    get:
+      summary: Get captcha image
+      description: Returns the captcha image challenge when status is 'waiting_captcha'.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{32}$'
+            example: '9fb94c2db1b7eb774a382100df3fcd6d'
+      responses:
+        '200':
+          description: Captcha image.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No captcha available for this import.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Submit captcha answer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{32}$'
+            example: '9fb94c2db1b7eb774a382100df3fcd6d'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer:
+                  type: string
+                  description: The text solved from the captcha image.
+      responses:
+        '200':
+          description: Answer accepted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: No captcha pending for this import.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ReceiptImport:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-f]{32}$'
+          example: '9fb94c2db1b7eb774a382100df3fcd6d'
+        status:
+          type: string
+          enum: [pending, fetching, waiting_captcha, processing, completed, failed]
+        done:
+          type: boolean
+          description: Whether the import has reached a terminal state (completed or failed).
+        access_key:
+          type: string
+          nullable: true
+          pattern: '^[0-9]{44}$'
+          example: '29240112345678000101650010000000011000000019'
+        qr_url:
+          type: string
+          nullable: true
+        receipt_id:
+          type: integer
+          format: int64
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        captcha_url:
+          type: string
+          description: Hypermedia link to fetch the captcha image, present when status is 'waiting_captcha'.
+          nullable: true
+          example: '/receipts/imports/9fb94c2db1b7eb774a382100df3fcd6d/captcha'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Safe-to-expose error message.
+        request_id:
+          type: string
+        detail:
+          type: string
+          description: Full error chain (only in dev mode).
+
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
