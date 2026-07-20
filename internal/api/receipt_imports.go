@@ -194,14 +194,26 @@ func (r *ReceiptImport) run(newFetcher fetcherFactory, q *db.Queries) {
 		return
 	}
 
-	if _, err := store.SaveReceipt(ctx, q, *parsed.Receipt); err != nil {
+	receiptID, err := store.SaveReceipt(ctx, q, *parsed.Receipt)
+	if err != nil {
 		r.fail("failed to save receipt", start, err)
 		return
+	}
+
+	if receiptID == 0 {
+		existing, err := q.GetReceiptByAccessKey(ctx, parsed.Receipt.AccessKey)
+		if err == nil {
+			receiptID = existing.ID
+		}
 	}
 
 	r.mu.Lock()
 	r.status = StatusCompleted
 	r.AccessKey = parsed.Receipt.AccessKey
+	if receiptID > 0 {
+		id := receiptID
+		r.ReceiptID = &id
+	}
 	r.UpdatedAt = time.Now()
 	r.mu.Unlock()
 
