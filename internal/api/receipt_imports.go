@@ -229,16 +229,17 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	return json.Marshal(struct {
-		ID        string    `json:"id"`
-		Status    Status    `json:"status"`
-		Done      bool      `json:"done"`
-		AccessKey string    `json:"access_key,omitempty"`
-		QRURL     string    `json:"qr_url,omitempty"`
-		ReceiptID *int64    `json:"receipt_id,omitempty"`
-		Error     string    `json:"error,omitempty"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
+	res := struct {
+		ID         string    `json:"id"`
+		Status     Status    `json:"status"`
+		Done       bool      `json:"done"`
+		AccessKey  string    `json:"access_key,omitempty"`
+		QRURL      string    `json:"qr_url,omitempty"`
+		ReceiptID  *int64    `json:"receipt_id,omitempty"`
+		Error      string    `json:"error,omitempty"`
+		CaptchaURL string    `json:"captcha_url,omitempty"`
+		CreatedAt  time.Time `json:"created_at"`
+		UpdatedAt  time.Time `json:"updated_at"`
 	}{
 		ID:        r.ID,
 		Status:    r.status,
@@ -249,7 +250,13 @@ func (r *ReceiptImport) MarshalJSON() ([]byte, error) {
 		Error:     r.errMsg,
 		CreatedAt: r.CreatedAt,
 		UpdatedAt: r.UpdatedAt,
-	})
+	}
+
+	if r.status == StatusWaitingCaptcha {
+		res.CaptchaURL = "/receipts/imports/" + r.ID + "/captcha"
+	}
+
+	return json.Marshal(res)
 }
 
 // submitImport creates a receipt import and starts its run goroutine. Returns
@@ -304,6 +311,12 @@ func (s *Server) createImport(w http.ResponseWriter, r *http.Request) error {
 	}
 	if (req.AccessKey == "") == (req.QRURL == "") {
 		return apierrors.BadRequest("exactly one of access_key or qr_url is required", nil)
+	}
+
+	if req.AccessKey != "" {
+		if _, err := nfce.ParseAccessKey(req.AccessKey); err != nil {
+			return apierrors.BadRequest(errs.PublicMessage(err), err)
+		}
 	}
 
 	ri := s.submitImport(req.AccessKey, req.QRURL)
