@@ -1,0 +1,3 @@
+## 2026-07-10 - Discoverability with Hypermedia in Headless Systems
+**Learning:** In headless or backend-only projects, API UX is defined by discoverability. Providing resource-specific hypermedia links like `captcha_url` conditional on the resource's current state guides API consumers step-by-step through multi-step asynchronous processes and improves self-discoverability.
+**Action:** When designing asynchronous or multi-step API payloads, always include conditional hypermedia links (such as URLs for captcha verification or next-step actions) directly within the resource serialization when the resource transitions to a state requiring client intervention.
